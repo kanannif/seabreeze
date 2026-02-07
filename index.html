@@ -1,15 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes"/>
-  <title>Интерактивные круги</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-
-  <!-- Firebase SDK (Realtime Database) -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sea Breeze Works Progress</title>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body {
@@ -18,748 +12,126 @@
       color: #e6edf3;
       font-family: system-ui, sans-serif;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      padding: 20px;
-      touch-action: none;
+      padding: 40px 20px;
     }
 
-    #container {
-      position: relative;
-      width: 900px;
-      height: 600px;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      overflow: hidden;
-      background: #161b22;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-      user-select: none;
+    h1 {
+      margin-bottom: 50px;
+      font-size: 2.8rem;
+      text-align: center;
     }
 
-    #background, #svg-overlay {
-      position: absolute;
-      inset: 0;
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 30px;
       width: 100%;
-      height: 100%;
-      transform-origin: 0 0;
+      max-width: 1200px;
     }
 
-    #background {
-      object-fit: contain;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    #svg-overlay { z-index: 2; }
-
-    circle {
-      stroke-width: 1.5;
-      transition: all 0.18s ease;
-      cursor: default;
-    }
-
-    circle.filled {
-      fill: #238636cc;
-      stroke: #3fb950;
-      stroke-width: 2;
-    }
-
-    circle:not(.filled) {
-      fill: #444851cc;
-      stroke: #6e7681;
-      opacity: 0.7;
-    }
-
-    circle:hover { filter: drop-shadow(0 0 6px #58a6ff88); }
-    circle.filled:hover { filter: drop-shadow(0 0 8px #58a6ffcc); }
-
-    circle.moveable { cursor: move; }
-
-    circle.dragging {
-      opacity: 0.85 !important;
-      stroke-width: 5;
-      stroke: #ffd700;
-    }
-
-    #toolbar {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      z-index: 12;
-      background: rgba(13,17,23,0.85);
-      padding: 12px 16px;
+    .project-card {
+      background: #161b22;
+      border: 1px solid #30363d;
       border-radius: 12px;
-      border: 1px solid #30363d;
-      backdrop-filter: blur(6px);
-      display: none;
-      flex-wrap: wrap;
-      gap: 12px;
-      align-items: center;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
 
-    #toolbar label { color: #8b949e; font-size: 0.9rem; }
-    #toolbar input[type="number"] {
-      width: 70px;
-      padding: 6px 8px;
-      background: #0d1117;
-      border: 1px solid #30363d;
-      color: white;
-      border-radius: 6px;
+    .project-card h2 {
+      margin-bottom: 20px;
+      font-size: 1.6rem;
+      color: #58a6ff;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 16px;
     }
 
     .btn {
-      padding: 8px 14px;
+      padding: 12px 24px;
       background: #21262d;
       color: #c9d1d9;
       border: 1px solid #30363d;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      text-decoration: none;
+      font-size: 1.05rem;
     }
 
-    .btn:hover { background: #30363d; }
-    .btn.active {
+    .btn:hover {
+      background: #30363d;
+      transform: translateY(-2px);
+    }
+
+    .btn.primary {
       background: #388bfd;
-      color: white;
       border-color: #388bfd;
-    }
-
-    #counter {
-      position: absolute;
-      top: 16px;
-      right: 70px;
-      background: rgba(13,17,23,0.85);
-      color: #c9d1d9;
-      font-size: 1.4rem;
-      font-weight: 600;
-      padding: 6px 14px;
-      border-radius: 999px;
-      border: 1px solid #30363d;
-      z-index: 10;
-      backdrop-filter: blur(6px);
-      pointer-events: none;
-    }
-
-    #mode-btn {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      width: 44px;
-      height: 44px;
-      background: rgba(13,17,23,0.85);
-      color: #58a6ff;
-      border: 1px solid #30363d;
-      border-radius: 50%;
-      font-size: 1.4rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      z-index: 12;
-      transition: all 0.2s;
-      backdrop-filter: blur(6px);
-    }
-
-    #mode-btn:hover { background: #21262d; color: #79c0ff; transform: scale(1.1); }
-
-    #tooltip {
-      position: absolute;
-      background: rgba(13,17,23,0.95);
-      color: #c9d1d9;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 0.92rem;
-      pointer-events: none;
-      z-index: 15;
-      opacity: 0;
-      transition: opacity 0.18s;
-      white-space: nowrap;
-      border: 1px solid #30363d;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-    }
-
-    #info {
-      position: absolute;
-      bottom: 16px;
-      left: 20px;
-      color: #8b949e;
-      font-size: 0.95rem;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    #password-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-    }
-
-    #password-box {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      padding: 32px;
-      width: 360px;
-      max-width: 90%;
-      text-align: center;
-      position: relative;
-    }
-
-    #password-close {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      font-size: 1.6rem;
-      color: #8b949e;
-      cursor: pointer;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      transition: all 0.15s;
-    }
-
-    #password-close:hover {
-      color: #e6edf3;
-      background: rgba(255,255,255,0.08);
-    }
-
-    #password-input {
-      width: 100%;
-      padding: 12px;
-      margin: 16px 0;
-      font-size: 1.2rem;
-      background: #0d1117;
-      border: 1px solid #30363d;
       color: white;
-      border-radius: 6px;
     }
 
-    #password-submit {
-      padding: 12px 24px;
-      background: #388bfd;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 1.1rem;
+    .btn.primary:hover {
+      background: #79c0ff;
     }
-
-    #password-error {
-      color: #f85149;
-      margin-top: 12px;
-      min-height: 1.2em;
-    }
-
-    input[type="file"] { display: none; }
   </style>
 </head>
 <body>
+  <h1>Sea Breeze Works Progress</h1>
 
-  <div id="container">
-    <img id="background" src="" alt="" style="display:none;">
-    <svg id="svg-overlay" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid slice"></svg>
-
-    <div id="toolbar">
-      <label>Размер:</label>
-      <input type="number" id="radius-input" min="5" max="60" value="20" step="1">
-
-      <label>Цель:</label>
-      <input type="number" id="total-input" min="1" value="400" step="1">
-
-      <button id="add-mode-btn" class="btn" title="Включить создание, перемещение и удаление">
-        <i class="fas fa-plus"></i> Добавление +
-      </button>
-
-      <label for="bg-upload" class="btn" style="cursor:pointer;">
-        <i class="fas fa-image"></i> Фон
-      </label>
-      <input type="file" id="bg-upload" accept="image/*">
+  <div class="projects-grid">
+    <div class="project-card">
+      <h2>Rixos Villas</h2>
+      <div class="btn-group">
+        <a href="https://example.com/rixos-photos" class="btn" target="_blank">Photos / Videos</a>
+        <a href="rixos_progress.html" class="btn primary">Piles Installation Progress</a>
+      </div>
     </div>
 
-    <div id="counter">0 / 400</div>
-
-    <div id="mode-btn" title="Перейти в режим редактирования">
-      <i class="fas fa-pencil-alt"></i>
+    <div class="project-card">
+      <h2>Venetian Harbour Mall</h2>
+      <div class="btn-group">
+        <a href="https://example.com/venetian-photos" class="btn" target="_blank">Photos / Videos</a>
+        <a href="venetian_progress.html" class="btn primary">Piles Installation Progress</a>
+      </div>
     </div>
 
-    <div id="tooltip"></div>
+    <div class="project-card">
+      <h2>Five Stones</h2>
+      <div class="btn-group">
+        <a href="https://example.com/five-stones-photos" class="btn" target="_blank">Photos / Videos</a>
+        <a href="five_stones_progress.html" class="btn primary">Piles Installation Progress</a>
+      </div>
+    </div>
 
-    <div id="info">Редактирование: ЛКМ по кругу → закрасить / снять · При включённой кнопке «Добавление +» → можно создавать, перемещать и удалять (ПКМ)</div>
+    <div class="project-card">
+      <h2>Radisson Blu</h2>
+      <div class="btn-group">
+        <a href="https://example.com/radisson-photos" class="btn" target="_blank">Photos / Videos</a>
+        <a href="radisson_progress.html" class="btn primary">Piles Installation Progress</a>
+      </div>
+    </div>
+
+    <div class="project-card">
+      <h2>Halfmoon Casino</h2>
+      <div class="btn-group">
+        <a href="https://example.com/halfmoon-photos" class="btn" target="_blank">Photos / Videos</a>
+        <a href="halfmoon_progress.html" class="btn primary">Piles Installation Progress</a>
+      </div>
+    </div>
+
+    <div class="project-card">
+      <h2>Merit Casino</h2>
+      <div class="btn-group">
+        <a href="https://example.com/merit-photos" class="btn" target="_blank">Photos / Videos</a>
+        <a href="merit_progress.html" class="btn primary">Piles Installation Progress</a>
+      </div>
+    </div>
   </div>
-
-  <div id="password-overlay">
-    <div id="password-box">
-      <div id="password-close">×</div>
-      <h2>Режим редактирования</h2>
-      <p>Введите пароль</p>
-      <input type="password" id="password-input" placeholder="Пароль..." autocomplete="off"/>
-      <button id="password-submit">Войти</button>
-      <div id="password-error"></div>
-    </div>
-  </div>
-
-  <script>
-    // ────────────────────────────────────────────────────────────────
-    //  Firebase — общий прогресс для всех пользователей
-    // ────────────────────────────────────────────────────────────────
-    const firebaseConfig = {
-      apiKey: "AIzaSyBKWUqpAfTd27d-Ldfo1lP8WjDLxSxQgtM",
-      authDomain: "sea-breeze-project.firebaseapp.com",
-      databaseURL: "https://sea-breeze-project-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "sea-breeze-project",
-      storageBucket: "sea-breeze-project.firebasestorage.app",
-      messagingSenderId: "696674644335",
-      appId: "1:696674644335:web:c51f4a3d462c4ba6bbb89a"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const stateRef = db.ref('circles/global');
-
-    const container = document.getElementById('container');
-    const svg = document.getElementById('svg-overlay');
-    const bgImg = document.getElementById('background');
-    const counter = document.getElementById('counter');
-    const modeBtn = document.getElementById('mode-btn');
-    const tooltip = document.getElementById('tooltip');
-    const toolbar = document.getElementById('toolbar');
-    const radiusInput = document.getElementById('radius-input');
-    const totalInput = document.getElementById('total-input');
-    const bgUpload = document.getElementById('bg-upload');
-    const passwordOverlay = document.getElementById('password-overlay');
-    const passwordClose = document.getElementById('password-close');
-    const addModeBtn = document.getElementById('add-mode-btn');
-
-    const CIRCLE_RADIUS_DEFAULT = 20;
-    let mode = 'view';
-    let addMode = false;
-    let filledCount = 0;
-    let draggingCircle = null;
-    let dragStart = { x: 0, y: 0 };
-    let isPanning = false;
-    let panStart = { x: 0, y: 0 };
-    let scale = 1;
-    let originX = 0;
-    let originY = 0;
-
-    function updateCounter() {
-      const total = parseInt(totalInput.value) || 400;
-      counter.textContent = `${filledCount} / ${total}`;
-    }
-
-    function updateAllRadii() {
-      const r = parseInt(radiusInput.value) || CIRCLE_RADIUS_DEFAULT;
-      svg.querySelectorAll('circle').forEach(c => c.setAttribute('r', r));
-    }
-
-    function updateCirclesInteraction() {
-      const circles = svg.querySelectorAll('circle');
-      circles.forEach(c => {
-        if (mode === 'edit') {
-          c.style.pointerEvents = 'all';
-          if (addMode) {
-            c.classList.add('moveable');
-          } else {
-            c.classList.remove('moveable');
-          }
-        } else {
-          c.style.pointerEvents = 'none';
-        }
-      });
-    }
-
-    function createCircle(cx, cy) {
-      const r = parseInt(radiusInput.value) || CIRCLE_RADIUS_DEFAULT;
-      const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-      circle.setAttribute("cx", cx);
-      circle.setAttribute("cy", cy);
-      circle.setAttribute("r", r);
-      circle.setAttribute("data-date", new Date().toLocaleDateString('ru-RU'));
-      circle.classList.remove('filled');
-
-      circle.addEventListener('click', handleCircleClick);
-      circle.addEventListener('contextmenu', handleCircleContextMenu);
-      circle.addEventListener('mousedown', startCircleDrag);
-      circle.addEventListener('touchstart', startCircleDrag, { passive: false });
-
-      svg.appendChild(circle);
-      updateCounter();
-      updateCirclesInteraction();
-      saveSharedState(); // Сохраняем сразу
-      return circle;
-    }
-
-    container.addEventListener('click', e => {
-      if (mode !== 'edit') return;
-      if (e.target.tagName.toLowerCase() === 'circle') return;
-      if (!addMode) return;
-
-      const rect = svg.getBoundingClientRect();
-      const cx = (e.clientX - rect.left - originX) / scale;
-      const cy = (e.clientY - rect.top - originY) / scale;
-
-      const r = parseInt(radiusInput.value) || CIRCLE_RADIUS_DEFAULT;
-      if (cx < r || cx > 900 - r || cy < r || cy > 600 - r) return;
-
-      createCircle(cx, cy);
-    }, { passive: false });
-
-    function startCircleDrag(e) {
-      if (mode !== 'edit') return;
-      if (!addMode) return;
-      if (e.button !== 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      draggingCircle = e.currentTarget || e.target;
-      const touch = e.touches ? e.touches[0] : e;
-      dragStart.x = touch.clientX;
-      dragStart.y = touch.clientY;
-      draggingCircle.classList.add('dragging');
-
-      document.addEventListener('mousemove', onCircleDrag);
-      document.addEventListener('mouseup', stopCircleDrag);
-      document.addEventListener('touchmove', onCircleDrag, { passive: false });
-      document.addEventListener('touchend', stopCircleDrag);
-    }
-
-    function onCircleDrag(e) {
-      if (!draggingCircle) return;
-      e.preventDefault();
-
-      const touch = e.touches ? e.touches[0] : e;
-      const dx = (touch.clientX - dragStart.x) / scale;
-      const dy = (touch.clientY - dragStart.y) / scale;
-
-      const cx = parseFloat(draggingCircle.getAttribute('cx')) + dx;
-      const cy = parseFloat(draggingCircle.getAttribute('cy')) + dy;
-
-      draggingCircle.setAttribute('cx', cx);
-      draggingCircle.setAttribute('cy', cy);
-
-      dragStart.x = touch.clientX;
-      dragStart.y = touch.clientY;
-    }
-
-    function stopCircleDrag() {
-      if (draggingCircle) {
-        draggingCircle.classList.remove('dragging');
-        draggingCircle = null;
-      }
-      document.removeEventListener('mousemove', onCircleDrag);
-      document.removeEventListener('mouseup', stopCircleDrag);
-      document.removeEventListener('touchmove', onCircleDrag);
-      document.removeEventListener('touchend', stopCircleDrag);
-    }
-
-    function handleCircleClick(e) {
-      if (mode !== 'edit') return;
-      e.stopPropagation();
-
-      const circle = e.currentTarget;
-
-      if (circle.classList.contains('filled')) {
-        circle.classList.remove('filled');
-        filledCount--;
-      } else {
-        circle.classList.add('filled');
-        filledCount++;
-      }
-
-      updateCounter();
-
-      const date = circle.getAttribute('data-date') || '—';
-      tooltip.textContent = `Добавлен: ${date}`;
-      const rect = circle.getBoundingClientRect();
-      tooltip.style.left = `${rect.left + rect.width / 2}px`;
-      tooltip.style.top = `${rect.top - 40}px`;
-      tooltip.style.opacity = '1';
-
-      setTimeout(() => {
-        if (tooltip.textContent.includes(date)) tooltip.style.opacity = '0';
-      }, 4000);
-
-      saveSharedState(); // Сохраняем
-    }
-
-    function handleCircleContextMenu(e) {
-      if (mode !== 'edit') return;
-      if (!addMode) return;
-      e.preventDefault();
-      const circle = e.currentTarget;
-      if (circle.classList.contains('filled')) filledCount--;
-      circle.remove();
-      updateCounter();
-      tooltip.style.opacity = '0';
-      saveSharedState(); // Сохраняем
-    }
-
-    container.addEventListener('mousedown', e => {
-      if (e.button === 1) {
-        e.preventDefault();
-        isPanning = true;
-        panStart.x = e.clientX - originX;
-        panStart.y = e.clientY - originY;
-        container.style.cursor = 'grabbing';
-      }
-    });
-
-    container.addEventListener('mousemove', e => {
-      if (isPanning) {
-        originX = e.clientX - panStart.x;
-        originY = e.clientY - panStart.y;
-        applyTransform();
-      }
-    });
-
-    container.addEventListener('mouseup', e => {
-      if (e.button === 1) {
-        isPanning = false;
-        container.style.cursor = scale > 1 ? 'grab' : 'default';
-      }
-      stopCircleDrag();
-    });
-
-    container.addEventListener('mouseleave', () => {
-      isPanning = false;
-      container.style.cursor = scale > 1 ? 'grab' : 'default';
-      stopCircleDrag();
-    });
-
-    container.addEventListener('wheel', e => {
-      e.preventDefault();
-      const delta = e.deltaY < 0 ? 0.15 : -0.15;
-      const oldScale = scale;
-      scale = Math.max(0.5, Math.min(4, scale + delta));
-
-      const rect = container.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-
-      originX = mx - (mx - originX) * (scale / oldScale);
-      originY = my - (my - originY) * (scale / oldScale);
-
-      applyTransform();
-      container.style.cursor = scale > 1 ? 'grab' : 'default';
-    }, { passive: false });
-
-    function applyTransform() {
-      const transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-      svg.style.transform = transform;
-      bgImg.style.transform = transform;
-    }
-
-    radiusInput.addEventListener('input', () => {
-      updateAllRadii();
-      saveSharedState();
-    });
-
-    totalInput.addEventListener('input', () => {
-      updateCounter();
-      saveSharedState();
-    });
-
-    bgUpload.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        bgImg.src = ev.target.result;
-        bgImg.style.display = 'block';
-        saveSharedState(); // Сохраняем фон
-      };
-      reader.readAsDataURL(file);
-    });
-
-    addModeBtn.addEventListener('click', () => {
-      addMode = !addMode;
-      addModeBtn.classList.toggle('active', addMode);
-      addModeBtn.innerHTML = addMode
-        ? '<i class="fas fa-plus"></i> Добавление + <b>ВКЛ</b>'
-        : '<i class="fas fa-plus"></i> Добавление +';
-      updateCirclesInteraction();
-    });
-
-    passwordClose.addEventListener('click', () => {
-      passwordOverlay.style.display = 'none';
-      document.getElementById('password-input').value = '';
-      document.getElementById('password-error').textContent = '';
-    });
-
-    passwordOverlay.addEventListener('click', e => {
-      if (e.target === passwordOverlay) {
-        passwordOverlay.style.display = 'none';
-        document.getElementById('password-input').value = '';
-        document.getElementById('password-error').textContent = '';
-      }
-    });
-
-    modeBtn.addEventListener('click', () => {
-      if (mode === 'view') {
-        passwordOverlay.style.display = 'flex';
-        document.getElementById('password-input').focus();
-      } else {
-        mode = 'view';
-        addMode = false;
-        addModeBtn.classList.remove('active');
-        addModeBtn.innerHTML = '<i class="fas fa-plus"></i> Добавление +';
-        updateModeUI();
-        updateCirclesInteraction();
-      }
-    });
-
-    document.getElementById('password-submit').addEventListener('click', () => {
-      const input = document.getElementById('password-input').value.trim();
-      if (input === '12345') {
-        mode = 'edit';
-        passwordOverlay.style.display = 'none';
-        document.getElementById('password-input').value = '';
-        document.getElementById('password-error').textContent = '';
-        updateModeUI();
-        updateCirclesInteraction();
-      } else {
-        document.getElementById('password-error').textContent = 'Неверный пароль';
-      }
-    });
-
-    document.getElementById('password-input').addEventListener('keypress', e => {
-      if (e.key === 'Enter') document.getElementById('password-submit').click();
-    });
-
-    function updateModeUI() {
-      toolbar.style.display = mode === 'edit' ? 'flex' : 'none';
-
-      if (mode === 'edit') {
-        modeBtn.innerHTML = '<i class="fas fa-eye"></i>';
-        modeBtn.title = 'Вернуться в просмотр';
-        document.getElementById('info').textContent =
-          "ЛКМ по кругу → закрасить / снять · При включённой кнопке «Добавление +» → можно создавать, перемещать и удалять (ПКМ)";
-      } else {
-        mode = 'view';
-        modeBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
-        modeBtn.title = 'Режим редактирования';
-        tooltip.style.opacity = '0';
-        document.getElementById('info').textContent =
-          "Только просмотр · Зум колесом / pinch · Pan — зажать колесо и тянуть";
-      }
-    }
-
-    // ────────────────────────────────────────────────────────────────
-    //  Загрузка состояния при запуске
-    // ────────────────────────────────────────────────────────────────
-    stateRef.once('value').then((snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
-
-      svg.innerHTML = '';
-      filledCount = 0;
-
-      (data.circles || []).forEach(item => {
-        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        circle.setAttribute('cx', item.cx);
-        circle.setAttribute('cy', item.cy);
-        circle.setAttribute('r', item.r);
-        circle.setAttribute('data-date', item.date || new Date().toLocaleDateString('ru-RU'));
-
-        if (item.filled) {
-          circle.classList.add('filled');
-          filledCount++;
-        }
-
-        circle.addEventListener('click', handleCircleClick);
-        circle.addEventListener('contextmenu', handleCircleContextMenu);
-        circle.addEventListener('mousedown', startCircleDrag);
-        circle.addEventListener('touchstart', startCircleDrag, { passive: false });
-
-        svg.appendChild(circle);
-      });
-
-      if (data.background && data.background.startsWith('data:image')) {
-        bgImg.src = data.background;
-        bgImg.style.display = 'block';
-      }
-
-      radiusInput.value = data.radius || '20';
-      totalInput.value = data.total || '400';
-
-      updateAllRadii();
-      updateCounter();
-    }).catch(err => console.error('Ошибка загрузки из Firebase:', err));
-
-    // ────────────────────────────────────────────────────────────────
-    //  Реал-тайм обновление от других пользователей
-    // ────────────────────────────────────────────────────────────────
-    stateRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
-
-      svg.innerHTML = '';
-      filledCount = 0;
-
-      (data.circles || []).forEach(item => {
-        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        circle.setAttribute('cx', item.cx);
-        circle.setAttribute('cy', item.cy);
-        circle.setAttribute('r', item.r);
-        circle.setAttribute('data-date', item.date);
-
-        if (item.filled) {
-          circle.classList.add('filled');
-          filledCount++;
-        }
-
-        circle.addEventListener('click', handleCircleClick);
-        circle.addEventListener('contextmenu', handleCircleContextMenu);
-        circle.addEventListener('mousedown', startCircleDrag);
-        circle.addEventListener('touchstart', startCircleDrag, { passive: false });
-
-        svg.appendChild(circle);
-      });
-
-      if (data.background && data.background.startsWith('data:image')) {
-        bgImg.src = data.background;
-        bgImg.style.display = 'block';
-      }
-
-      radiusInput.value = data.radius || '20';
-      totalInput.value = data.total || '400';
-
-      updateAllRadii();
-      updateCounter();
-    });
-
-    // ────────────────────────────────────────────────────────────────
-    //  Функция сохранения
-    // ────────────────────────────────────────────────────────────────
-    function saveSharedState() {
-      const circlesData = Array.from(svg.querySelectorAll('circle')).map(c => ({
-        cx: c.getAttribute('cx'),
-        cy: c.getAttribute('cy'),
-        r: c.getAttribute('r'),
-        filled: c.classList.contains('filled'),
-        date: c.getAttribute('data-date')
-      }));
-
-      stateRef.set({
-        circles: circlesData,
-        background: bgImg.src || '',
-        radius: radiusInput.value,
-        total: totalInput.value,
-        updated: new Date().toISOString()
-      }).catch(err => console.error('Ошибка сохранения:', err));
-    }
-
-    updateModeUI();
-  </script>
 </body>
 </html>
