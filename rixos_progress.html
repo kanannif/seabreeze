@@ -43,21 +43,15 @@
 
     #background, #svg-overlay {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100vw !important;
-      height: 100vh !important;
-      transform-origin: 0 0;
-      will-change: transform;
-      backface-visibility: hidden;
-    }
-
-    #background {
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
       object-fit: contain;
+      transform-origin: top left;
       pointer-events: none;
-      z-index: 1;
     }
 
+    #background { z-index: 1; }
     #svg-overlay { z-index: 2; }
 
     circle {
@@ -303,7 +297,7 @@
 
   <div id="container">
     <img id="background" src="" alt="" style="display:none;">
-    <svg id="svg-overlay" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid meet"></svg>
+    <svg id="svg-overlay" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid meet"></svg>
 
     <div id="toolbar">
       <label id="radius-label" style="display:none;">Pile Radius:</label>
@@ -320,6 +314,10 @@
         <i class="fas fa-image"></i> Background
       </label>
       <input type="file" id="bg-upload" accept="image/*">
+
+      <a href="index.html" class="btn">
+        <i class="fas fa-home"></i> Home
+      </a>
 
       <button id="stats-btn" class="btn">
         <i class="fas fa-chart-line"></i> Statistics
@@ -378,7 +376,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const stateRef = db.ref('circles/fivestones/global'); // ← меняй для каждого проекта!
+    const stateRef = db.ref('circles/fivestones/global'); // ← меняй для Rixos на 'circles/rixos/global'
 
     const container = document.getElementById('container');
     const svg = document.getElementById('svg-overlay');
@@ -411,15 +409,25 @@
     let originX = 0;
     let originY = 0;
 
+    // Фиксированный viewBox — под размер твоего фона
+    // ЗАМЕНИ эти значения на реальные размеры твоего изображения фона!!!
+    const ORIGINAL_WIDTH = 6623;   // например 1920
+    const ORIGINAL_HEIGHT = 4678;  // например 1080
+
     function updateViewBox() {
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      svg.setAttribute('viewBox', `0 0 ${ORIGINAL_WIDTH} ${ORIGINAL_HEIGHT}`);
     }
 
-    window.addEventListener('resize', updateViewBox);
+    // Вызываем только один раз при загрузке (НЕ при ресайзе окна!)
     window.addEventListener('load', updateViewBox);
     updateViewBox();
+
+    // Динамическая подстройка под реальный размер загруженного фона (если он отличается)
+    bgImg.onload = () => {
+      if (bgImg.naturalWidth > 0 && bgImg.naturalHeight > 0) {
+        svg.setAttribute('viewBox', `0 0 ${bgImg.naturalWidth} ${bgImg.naturalHeight}`);
+      }
+    };
 
     function updateCounter() {
       const total = parseInt(totalInput.value) || 400;
