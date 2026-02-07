@@ -121,7 +121,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      text-decoration: none; /* без подчёркивания */
+      text-decoration: none; /* без подчёркивания у Home */
     }
 
     .btn:hover { background: #30363d; }
@@ -316,7 +316,7 @@
       </label>
       <input type="file" id="bg-upload" accept="image/*">
 
-      <!-- Кнопка Home — над кнопкой Statistics, стиль такой же -->
+      <!-- Кнопка Home — над кнопкой Statistics -->
       <a href="index.html" class="btn">
         <i class="fas fa-home"></i> Home
       </a>
@@ -470,7 +470,6 @@
 
     function showTooltip(e) {
       if (mode !== 'view') return;
-
       const circle = e.currentTarget;
       if (!circle.classList.contains('filled')) return;
 
