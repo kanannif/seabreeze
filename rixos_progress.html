@@ -121,7 +121,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      text-decoration: none; /* убираем любое подчёркивание */
+      text-decoration: none; /* без подчёркивания */
     }
 
     .btn:hover { background: #30363d; }
@@ -316,7 +316,7 @@
       </label>
       <input type="file" id="bg-upload" accept="image/*">
 
-      <!-- Кнопка Home — над кнопкой Statistics, стиль идентичен -->
+      <!-- Кнопка Home — над кнопкой Statistics, стиль такой же -->
       <a href="index.html" class="btn">
         <i class="fas fa-home"></i> Home
       </a>
@@ -378,7 +378,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const stateRef = db.ref('circles/rixos/global'); // ← меняй для каждого проекта! (rixos / fivestones и т.д.)
+    const stateRef = db.ref('circles/fivestones/global'); // ← меняй для каждого проекта!
 
     const container = document.getElementById('container');
     const svg = document.getElementById('svg-overlay');
@@ -593,13 +593,13 @@
     }
 
     container.addEventListener('mousedown', e => {
-      if (e.button === 1) {
+      if (mode === 'view' && scale > 1 && e.button === 0) {
         e.preventDefault();
         isPanning = true;
         panStart.x = e.clientX - originX;
         panStart.y = e.clientY - originY;
         container.classList.add('grabbing');
-      } else if (mode === 'view' && scale > 1 && e.button === 0) {
+      } else if (e.button === 1) {
         e.preventDefault();
         isPanning = true;
         panStart.x = e.clientX - originX;
