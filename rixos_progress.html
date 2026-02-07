@@ -660,7 +660,7 @@
 
     function updateModeUI() {
       const isEdit = (mode === 'edit');
-      toolbar.style.display = isEdit ? 'flex' : 'none';
+      toolbar.style.display = 'flex';
       modeBtn.innerHTML = isEdit ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-pencil-alt"></i>';
       modeBtn.title = isEdit ? 'Switch to view mode' : 'Switch to edit mode';
       
