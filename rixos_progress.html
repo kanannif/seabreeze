@@ -2,10 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Критически важные мета-теги для iPad/Safari -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <title>Piles Installation Progress</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
@@ -24,7 +22,7 @@
       background: #0d1117;
       color: #e6edf3;
       font-family: system-ui, sans-serif;
-      touch-action: pinch-zoom pan-x pan-y; /* ← разрешаем зум пальцами + панорамирование */
+      touch-action: pinch-zoom pan-x pan-y;
     }
 
     #container {
@@ -50,8 +48,8 @@
       width: 100vw !important;
       height: 100vh !important;
       transform-origin: 0 0;
-      will-change: transform; /* GPU-ускорение на iOS */
-      backface-visibility: hidden; /* фиксит "плытие" */
+      will-change: transform;
+      backface-visibility: hidden;
     }
 
     #background {
@@ -323,11 +321,6 @@
       </label>
       <input type="file" id="bg-upload" accept="image/*">
 
-      <!-- Кнопка Home над Statistics -->
-      <a href="index.html" class="btn">
-        <i class="fas fa-home"></i> Home
-      </a>
-
       <button id="stats-btn" class="btn">
         <i class="fas fa-chart-line"></i> Statistics
       </button>
@@ -419,36 +412,14 @@
     let originY = 0;
 
     function updateViewBox() {
-      const w = container.offsetWidth || window.innerWidth;
-      const h = container.offsetHeight || window.innerHeight;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
       svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     }
 
-    // Вызываем при всех изменениях
     window.addEventListener('resize', updateViewBox);
-    window.addEventListener('orientationchange', updateViewBox);
     window.addEventListener('load', updateViewBox);
-
-    // Динамическое обновление во время pinch-zoom на iPad
-    let rafId;
-    function continuousUpdate() {
-      updateViewBox();
-      rafId = requestAnimationFrame(continuousUpdate);
-    }
-
-    document.addEventListener('touchstart', () => {
-      if (!rafId) rafId = requestAnimationFrame(continuousUpdate);
-    }, { passive: true });
-
-    document.addEventListener('touchend', () => {
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-        rafId = null;
-      }
-      updateViewBox();
-    }, { passive: true });
-
-    updateViewBox(); // первый вызов
+    updateViewBox();
 
     function updateCounter() {
       const total = parseInt(totalInput.value) || 400;
@@ -524,7 +495,7 @@
       const cy = (e.clientY - rect.top - originY) / scale;
 
       const r = parseInt(radiusInput.value) || CIRCLE_RADIUS_DEFAULT;
-      if (cx < r || cx > container.offsetWidth - r || cy < r || cy > container.offsetHeight - r) return;
+      if (cx < r || cx > container.clientWidth - r || cy < r || cy > container.clientHeight - r) return;
 
       createCircle(cx, cy);
     }, { passive: false });
