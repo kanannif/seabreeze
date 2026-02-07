@@ -48,10 +48,10 @@
       height: 100% !important;
       object-fit: contain;
       transform-origin: top left;
-      pointer-events: none;
+      pointer-events: auto; /* ВАЖНО: события проходят */
     }
 
-    #background { z-index: 1; }
+    #background { z-index: 1; pointer-events: none; }
     #svg-overlay { z-index: 2; }
 
     circle {
@@ -376,7 +376,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const stateRef = db.ref('circles/fivestones/global'); // ← меняй для Rixos на 'circles/rixos/global'
+    const stateRef = db.ref('circles/fivestones/global'); // ← меняй для Rixos
 
     const container = document.getElementById('container');
     const svg = document.getElementById('svg-overlay');
@@ -409,24 +409,22 @@
     let originX = 0;
     let originY = 0;
 
-    // Фиксированный viewBox — под размер твоего фона
-    // ЗАМЕНИ эти значения на реальные размеры твоего изображения фона!!!
-    const ORIGINAL_WIDTH = 6623;   // например 1920
-    const ORIGINAL_HEIGHT = 4678;  // например 1080
+    // Фиксированные размеры — подгони под свой фон!
+    const ORIGINAL_WIDTH = 6623;
+    const ORIGINAL_HEIGHT = 4678;
 
     function updateViewBox() {
       svg.setAttribute('viewBox', `0 0 ${ORIGINAL_WIDTH} ${ORIGINAL_HEIGHT}`);
     }
 
-    // Вызываем только один раз при загрузке (НЕ при ресайзе окна!)
     window.addEventListener('load', updateViewBox);
     updateViewBox();
 
-    // Динамическая подстройка под реальный размер загруженного фона (если он отличается)
     bgImg.onload = () => {
       if (bgImg.naturalWidth > 0 && bgImg.naturalHeight > 0) {
         svg.setAttribute('viewBox', `0 0 ${bgImg.naturalWidth} ${bgImg.naturalHeight}`);
       }
+      bgImg.style.display = 'block';
     };
 
     function updateCounter() {
@@ -498,14 +496,28 @@
       if (e.target.tagName.toLowerCase() === 'circle') return;
       if (!addMode) return;
 
+      // Точная привязка под курсор/палец даже при зуме
       const rect = svg.getBoundingClientRect();
-      const cx = (e.clientX - rect.left - originX) / scale;
-      const cy = (e.clientY - rect.top - originY) / scale;
+      const scaleX = ORIGINAL_WIDTH / rect.width;
+      const scaleY = ORIGINAL_HEIGHT / rect.height;
 
-      const r = parseInt(radiusInput.value) || CIRCLE_RADIUS_DEFAULT;
-      if (cx < r || cx > container.clientWidth - r || cy < r || cy > container.clientHeight - r) return;
+      const cx = (e.clientX - rect.left) * scaleX;
+      const cy = (e.clientY - rect.top) * scaleY;
 
       createCircle(cx, cy);
+    }, { passive: false });
+
+    container.addEventListener('contextmenu', e => {
+      if (mode !== 'edit' || !addMode) return;
+      if (e.target.tagName.toLowerCase() !== 'circle') return;
+
+      e.preventDefault();
+      const circle = e.target;
+      if (circle.classList.contains('filled')) filledCount--;
+      circle.remove();
+      updateCounter();
+      tooltip.style.opacity = '0';
+      saveSharedState();
     }, { passive: false });
 
     function startCircleDrag(e) {
@@ -532,8 +544,12 @@
       e.preventDefault();
 
       const touch = e.touches ? e.touches[0] : e;
-      const dx = (touch.clientX - dragStart.x) / scale;
-      const dy = (touch.clientY - dragStart.y) / scale;
+      const rect = svg.getBoundingClientRect();
+      const scaleX = ORIGINAL_WIDTH / rect.width;
+      const scaleY = ORIGINAL_HEIGHT / rect.height;
+
+      const dx = (touch.clientX - dragStart.x) * scaleX;
+      const dy = (touch.clientY - dragStart.y) * scaleY;
 
       const cx = parseFloat(draggingCircle.getAttribute('cx')) + dx;
       const cy = parseFloat(draggingCircle.getAttribute('cy')) + dy;
@@ -554,6 +570,7 @@
       document.removeEventListener('mouseup', stopCircleDrag);
       document.removeEventListener('touchmove', onCircleDrag);
       document.removeEventListener('touchend', stopCircleDrag);
+      saveSharedState();
     }
 
     function handleCircleClick(e) {
