@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+
   <title>Piles Installation Progress</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
@@ -12,22 +14,22 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     html, body {
-      height: 100%;
-      width: 100%;
+      height: 100vh;
+      width: 100vw;
       margin: 0;
       padding: 0;
       overflow: hidden;
       background: #0d1117;
       color: #e6edf3;
       font-family: system-ui, sans-serif;
-      touch-action: none;
+      touch-action: pinch-zoom pan-x pan-y;
     }
 
     #container {
       position: fixed;
       inset: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw !important;
+      height: 100vh !important;
       border: none;
       overflow: hidden;
       background: #161b22;
@@ -42,22 +44,25 @@
     #background, #svg-overlay {
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      transform-origin: 0 0;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain;
+      transform-origin: top left;
+      pointer-events: auto;
     }
 
     #background {
-      object-fit: contain;
-      pointer-events: none;
       z-index: 1;
+      pointer-events: none;
     }
 
-    #svg-overlay { z-index: 2; }
+    #svg-overlay {
+      z-index: 2;
+    }
 
     circle {
       stroke-width: 1.5;
-      transition: all 0.18s ease;
+      transition: fill 0.18s ease, stroke 0.18s ease;
       cursor: default;
     }
 
@@ -73,10 +78,17 @@
       opacity: 0.7;
     }
 
-    circle:hover { filter: drop-shadow(0 0 6px #58a6ff88); }
-    circle.filled:hover { filter: drop-shadow(0 0 8px #58a6ffcc); }
+    circle:hover {
+      filter: drop-shadow(0 0 6px #58a6ff88);
+    }
 
-    circle.moveable { cursor: move; }
+    circle.filled:hover {
+      filter: drop-shadow(0 0 8px #58a6ffcc);
+    }
+
+    circle.moveable {
+      cursor: move;
+    }
 
     circle.dragging {
       opacity: 0.85 !important;
@@ -100,7 +112,11 @@
       align-items: center;
     }
 
-    #toolbar label { color: #8b949e; font-size: 0.9rem; }
+    #toolbar label {
+      color: #8b949e;
+      font-size: 0.9rem;
+    }
+
     #toolbar input[type="number"] {
       width: 70px;
       padding: 6px 8px;
@@ -121,10 +137,13 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      text-decoration: none; /* убираем любое подчёркивание */
+      text-decoration: none;
     }
 
-    .btn:hover { background: #30363d; }
+    .btn:hover {
+      background: #30363d;
+    }
+
     .btn.active {
       background: #388bfd;
       color: white;
@@ -167,7 +186,11 @@
       backdrop-filter: blur(6px);
     }
 
-    #mode-btn:hover { background: #21262d; color: #79c0ff; transform: scale(1.1); }
+    #mode-btn:hover {
+      background: #21262d;
+      color: #79c0ff;
+      transform: scale(1.1);
+    }
 
     #tooltip {
       position: absolute;
@@ -231,11 +254,6 @@
       cursor: pointer;
     }
 
-    #password-close:hover,
-    #stats-close:hover {
-      color: white;
-    }
-
     #password-input {
       width: 100%;
       padding: 12px;
@@ -291,14 +309,16 @@
       font-weight: bold;
     }
 
-    input[type="file"] { display: none; }
+    input[type="file"] {
+      display: none;
+    }
   </style>
 </head>
 <body>
 
   <div id="container">
     <img id="background" src="" alt="" style="display:none;">
-    <svg id="svg-overlay" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid meet"></svg>
+    <svg id="svg-overlay" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid meet"></svg>
 
     <div id="toolbar">
       <label id="radius-label" style="display:none;">Pile Radius:</label>
@@ -316,7 +336,6 @@
       </label>
       <input type="file" id="bg-upload" accept="image/*">
 
-      <!-- Кнопка Home — над кнопкой Statistics, стиль идентичен -->
       <a href="index.html" class="btn">
         <i class="fas fa-home"></i> Home
       </a>
@@ -333,15 +352,14 @@
     </div>
 
     <div id="tooltip"></div>
-
-    <div id="info">View mode only · Wheel zoom · Left click drag to pan when zoomed · Hover on installed pile to see date</div>
+    <div id="info">View mode only · Wheel zoom · Left click drag to pan when zoomed</div>
   </div>
 
   <div id="password-overlay">
     <div id="password-box">
       <div id="password-close">×</div>
       <h2>Access Mode</h2>
-      <p>Enter password</p>
+      <p>Enter password to unlock editing</p>
       <input type="password" id="password-input" placeholder="Password..." autocomplete="off"/>
       <button id="password-submit">Enter</button>
       <div id="password-error"></div>
@@ -366,6 +384,7 @@
   </div>
 
   <script>
+    // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBKWUqpAfTd27d-Ldfo1lP8WjDLxSxQgtM",
       authDomain: "sea-breeze-project.firebaseapp.com",
@@ -376,9 +395,10 @@
       appId: "1:696674644335:web:c51f4a3d462c4ba6bbb89a"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const stateRef = db.ref('circles/fivestones/global'); // ← меняй для каждого проекта! (rixos / fivestones и т.д.)
+    const stateRef = db.ref('circles/five_stones/global'); 
 
     const container = document.getElementById('container');
     const svg = document.getElementById('svg-overlay');
@@ -400,6 +420,9 @@
     const statsTotal = document.getElementById('stats-total');
 
     const CIRCLE_RADIUS_DEFAULT = 20;
+    const ORIGINAL_WIDTH = 6623;
+    const ORIGINAL_HEIGHT = 4678;
+
     let mode = 'view';
     let addMode = false;
     let filledCount = 0;
@@ -410,16 +433,20 @@
     let scale = 1;
     let originX = 0;
     let originY = 0;
+    let hasMoved = false; // Флаг для отличия клика от перетаскивания
 
     function updateViewBox() {
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      svg.setAttribute('viewBox', `0 0 ${ORIGINAL_WIDTH} ${ORIGINAL_HEIGHT}`);
     }
 
-    window.addEventListener('resize', updateViewBox);
     window.addEventListener('load', updateViewBox);
-    updateViewBox();
+
+    bgImg.onload = () => {
+      if (bgImg.naturalWidth > 0 && bgImg.naturalHeight > 0) {
+        svg.setAttribute('viewBox', `0 0 ${bgImg.naturalWidth} ${bgImg.naturalHeight}`);
+      }
+      bgImg.style.display = 'block';
+    };
 
     function updateCounter() {
       const total = parseInt(totalInput.value) || 400;
@@ -431,19 +458,6 @@
       svg.querySelectorAll('circle').forEach(c => c.setAttribute('r', r));
     }
 
-    function updateCirclesInteraction() {
-      const circles = svg.querySelectorAll('circle');
-      circles.forEach(c => {
-        if (mode === 'edit') {
-          c.style.pointerEvents = 'all';
-          if (addMode) c.classList.add('moveable');
-          else c.classList.remove('moveable');
-        } else {
-          c.style.pointerEvents = 'all';
-        }
-      });
-    }
-
     function createCircle(cx, cy) {
       const r = parseInt(radiusInput.value) || CIRCLE_RADIUS_DEFAULT;
       const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -451,68 +465,66 @@
       circle.setAttribute("cy", cy);
       circle.setAttribute("r", r);
       circle.setAttribute("data-date", new Date().toLocaleDateString('ru-RU'));
-      circle.classList.remove('filled');
+      
+      addCircleListeners(circle);
+      svg.appendChild(circle);
+      
+      saveSharedState();
+      updateCounter();
+      return circle;
+    }
 
+    function addCircleListeners(circle) {
       circle.addEventListener('click', handleCircleClick);
       circle.addEventListener('contextmenu', handleCircleContextMenu);
       circle.addEventListener('mousedown', startCircleDrag);
       circle.addEventListener('touchstart', startCircleDrag, { passive: false });
-
       circle.addEventListener('mouseenter', showTooltip);
       circle.addEventListener('mouseleave', hideTooltip);
-
-      svg.appendChild(circle);
-      updateCounter();
-      updateCirclesInteraction();
-      saveSharedState();
-      return circle;
     }
 
-    function showTooltip(e) {
-      if (mode !== 'view') return;
-
-      const circle = e.currentTarget;
-      if (!circle.classList.contains('filled')) return;
-
-      const date = circle.getAttribute('data-date') || 'No date';
-      tooltip.textContent = `Installed: ${date}`;
-      const rect = circle.getBoundingClientRect();
-      tooltip.style.left = `${rect.left + rect.width / 2}px`;
-      tooltip.style.top = `${rect.top - 40}px`;
-      tooltip.style.opacity = '1';
-    }
-
-    function hideTooltip() {
-      tooltip.style.opacity = '0';
-    }
-
-    container.addEventListener('click', e => {
-      if (mode !== 'edit') return;
-      if (e.target.tagName.toLowerCase() === 'circle') return;
-      if (!addMode) return;
-
-      const rect = svg.getBoundingClientRect();
-      const cx = (e.clientX - rect.left - originX) / scale;
-      const cy = (e.clientY - rect.top - originY) / scale;
-
-      const r = parseInt(radiusInput.value) || CIRCLE_RADIUS_DEFAULT;
-      if (cx < r || cx > container.clientWidth - r || cy < r || cy > container.clientHeight - r) return;
-
-      createCircle(cx, cy);
-    }, { passive: false });
-
-    function startCircleDrag(e) {
-      if (mode !== 'edit') return;
-      if (!addMode) return;
-      if (e.button !== 0) return;
-      e.preventDefault();
+    function handleCircleClick(e) {
+      if (mode !== 'edit' || hasMoved) return; 
       e.stopPropagation();
 
-      draggingCircle = e.currentTarget || e.target;
+      const circle = e.currentTarget;
+      if (circle.classList.contains('filled')) {
+        circle.classList.remove('filled');
+        filledCount--;
+      } else {
+        circle.classList.add('filled');
+        filledCount++;
+        circle.setAttribute("data-date", new Date().toLocaleDateString('ru-RU'));
+      }
+
+      updateCounter();
+      saveSharedState();
+    }
+
+    function handleCircleContextMenu(e) {
+      if (mode === 'edit' && addMode) {
+        e.preventDefault();
+        const circle = e.currentTarget;
+        if (circle.classList.contains('filled')) {
+          filledCount--;
+        }
+        circle.remove();
+        updateCounter();
+        saveSharedState();
+      }
+    }
+
+    function startCircleDrag(e) {
+      if (mode !== 'edit' || !addMode) return;
+      if (e.button !== 0 && e.type !== 'touchstart') return;
+      
+      e.stopPropagation();
+      hasMoved = false; // Сбрасываем при каждом нажатии
+      
+      draggingCircle = e.currentTarget;
       const touch = e.touches ? e.touches[0] : e;
       dragStart.x = touch.clientX;
       dragStart.y = touch.clientY;
-      draggingCircle.classList.add('dragging');
 
       document.addEventListener('mousemove', onCircleDrag);
       document.addEventListener('mouseup', stopCircleDrag);
@@ -522,20 +534,33 @@
 
     function onCircleDrag(e) {
       if (!draggingCircle) return;
-      e.preventDefault();
-
       const touch = e.touches ? e.touches[0] : e;
-      const dx = (touch.clientX - dragStart.x) / scale;
-      const dy = (touch.clientY - dragStart.y) / scale;
+      
+      const dx_screen = touch.clientX - dragStart.x;
+      const dy_screen = touch.clientY - dragStart.y;
 
-      const cx = parseFloat(draggingCircle.getAttribute('cx')) + dx;
-      const cy = parseFloat(draggingCircle.getAttribute('cy')) + dy;
+      // Если сдвиг больше 3 пикселей, считаем это перетаскиванием
+      if (Math.abs(dx_screen) > 3 || Math.abs(dy_screen) > 3) {
+        hasMoved = true; 
+      }
 
-      draggingCircle.setAttribute('cx', cx);
-      draggingCircle.setAttribute('cy', cy);
+      if (hasMoved) {
+        e.preventDefault();
+        draggingCircle.classList.add('dragging');
+        
+        const rect = svg.getBoundingClientRect();
+        const scaleX = ORIGINAL_WIDTH / rect.width;
+        const scaleY = ORIGINAL_HEIGHT / rect.height;
 
-      dragStart.x = touch.clientX;
-      dragStart.y = touch.clientY;
+        const cx = parseFloat(draggingCircle.getAttribute('cx')) + dx_screen * scaleX;
+        const cy = parseFloat(draggingCircle.getAttribute('cy')) + dy_screen * scaleY;
+
+        draggingCircle.setAttribute('cx', cx);
+        draggingCircle.setAttribute('cy', cy);
+
+        dragStart.x = touch.clientX;
+        dragStart.y = touch.clientY;
+      }
     }
 
     function stopCircleDrag() {
@@ -547,60 +572,24 @@
       document.removeEventListener('mouseup', stopCircleDrag);
       document.removeEventListener('touchmove', onCircleDrag);
       document.removeEventListener('touchend', stopCircleDrag);
+      if (hasMoved) saveSharedState();
     }
 
-    function handleCircleClick(e) {
-      if (mode !== 'edit') return;
-      e.stopPropagation();
-
-      const circle = e.currentTarget;
-
-      if (circle.classList.contains('filled')) {
-        circle.classList.remove('filled');
-        filledCount--;
-      } else {
-        circle.classList.add('filled');
-        filledCount++;
-        circle.setAttribute("data-date", new Date().toLocaleDateString('ru-RU'));
+    // SVG click for adding circles
+    svg.addEventListener('click', e => {
+      if (mode === 'edit' && addMode && e.target === svg) {
+        const rect = svg.getBoundingClientRect();
+        const scaleX = ORIGINAL_WIDTH / rect.width;
+        const scaleY = ORIGINAL_HEIGHT / rect.height;
+        const cx = (e.clientX - rect.left) * scaleX;
+        const cy = (e.clientY - rect.top) * scaleY;
+        createCircle(cx, cy);
       }
+    });
 
-      updateCounter();
-
-      const date = circle.getAttribute('data-date') || '—';
-      tooltip.textContent = `Installed: ${date}`;
-      const rect = circle.getBoundingClientRect();
-      tooltip.style.left = `${rect.left + rect.width / 2}px`;
-      tooltip.style.top = `${rect.top - 40}px`;
-      tooltip.style.opacity = '1';
-
-      setTimeout(() => {
-        if (tooltip.textContent.includes(date)) tooltip.style.opacity = '0';
-      }, 4000);
-
-      saveSharedState();
-    }
-
-    function handleCircleContextMenu(e) {
-      if (mode !== 'edit') return;
-      if (!addMode) return;
-      e.preventDefault();
-      const circle = e.currentTarget;
-      if (circle.classList.contains('filled')) filledCount--;
-      circle.remove();
-      updateCounter();
-      tooltip.style.opacity = '0';
-      saveSharedState();
-    }
-
+    // Zoom and Panning logic
     container.addEventListener('mousedown', e => {
-      if (e.button === 1) {
-        e.preventDefault();
-        isPanning = true;
-        panStart.x = e.clientX - originX;
-        panStart.y = e.clientY - originY;
-        container.classList.add('grabbing');
-      } else if (mode === 'view' && scale > 1 && e.button === 0) {
-        e.preventDefault();
+      if ((mode === 'view' && scale > 1 && e.button === 0) || e.button === 1) {
         isPanning = true;
         panStart.x = e.clientX - originX;
         panStart.y = e.clientY - originY;
@@ -608,7 +597,7 @@
       }
     });
 
-    container.addEventListener('mousemove', e => {
+    window.addEventListener('mousemove', e => {
       if (isPanning) {
         originX = e.clientX - panStart.x;
         originY = e.clientY - panStart.y;
@@ -616,20 +605,9 @@
       }
     });
 
-    container.addEventListener('mouseup', e => {
-      if (isPanning) {
-        isPanning = false;
-        container.classList.remove('grabbing');
-        container.style.cursor = scale > 1 ? 'grab' : 'default';
-      }
-      stopCircleDrag();
-    });
-
-    container.addEventListener('mouseleave', () => {
+    window.addEventListener('mouseup', () => {
       isPanning = false;
       container.classList.remove('grabbing');
-      container.style.cursor = scale > 1 ? 'grab' : 'default';
-      stopCircleDrag();
     });
 
     container.addEventListener('wheel', e => {
@@ -637,23 +615,82 @@
       const delta = e.deltaY < 0 ? 0.15 : -0.15;
       const oldScale = scale;
       scale = Math.max(0.5, Math.min(4, scale + delta));
-
       const rect = container.getBoundingClientRect();
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
-
       originX = mx - (mx - originX) * (scale / oldScale);
       originY = my - (my - originY) * (scale / oldScale);
-
       applyTransform();
-      container.style.cursor = scale > 1 ? 'grab' : 'default';
     }, { passive: false });
 
     function applyTransform() {
-      const transform = `translate(${originX}px, ${originY}px) scale(${scale})`;
-      svg.style.transform = transform;
-      bgImg.style.transform = transform;
+      const t = `translate(${originX}px, ${originY}px) scale(${scale})`;
+      svg.style.transform = t;
+      bgImg.style.transform = t;
     }
+
+    // UI Controls
+    modeBtn.addEventListener('click', () => {
+      if (mode === 'view') {
+        passwordOverlay.style.display = 'flex';
+        document.getElementById('password-input').focus();
+      } else {
+        mode = 'view';
+        updateModeUI();
+      }
+    });
+
+    document.getElementById('password-submit').addEventListener('click', () => {
+      const pw = document.getElementById('password-input').value;
+      if (pw === '12345') {
+        mode = 'edit';
+        passwordOverlay.style.display = 'none';
+        document.getElementById('password-input').value = '';
+        document.getElementById('password-error').textContent = '';
+        updateModeUI();
+      } else {
+        document.getElementById('password-error').textContent = 'Incorrect password.';
+      }
+    });
+
+    passwordClose.onclick = () => {
+      passwordOverlay.style.display = 'none';
+      document.getElementById('password-error').textContent = '';
+    };
+
+    function updateModeUI() {
+      const isEdit = (mode === 'edit');
+      toolbar.style.display = 'flex';
+      modeBtn.innerHTML = isEdit ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-pencil-alt"></i>';
+      modeBtn.title = isEdit ? 'Switch to view mode' : 'Switch to edit mode';
+      
+      document.getElementById('radius-label').style.display = isEdit ? 'inline' : 'none';
+      radiusInput.style.display = isEdit ? 'inline' : 'none';
+      document.getElementById('total-label').style.display = isEdit ? 'inline' : 'none';
+      totalInput.style.display = isEdit ? 'inline' : 'none';
+      addModeBtn.style.display = isEdit ? 'inline-flex' : 'none';
+      bgUpload.previousElementSibling.style.display = isEdit ? 'inline-flex' : 'none';
+      statsBtn.style.display = isEdit ? 'none' : 'inline-flex';
+
+      document.getElementById('info').textContent = isEdit 
+        ? "Edit mode: Click on empty space to add, click pile to toggle, right-click to delete. Drag to move."
+        : "View mode only · Wheel zoom · Left click drag to pan when zoomed";
+
+      if (!isEdit) {
+        addMode = false;
+        addModeBtn.classList.remove('active');
+        svg.querySelectorAll('circle').forEach(c => c.classList.remove('moveable'));
+      }
+    }
+
+    addModeBtn.addEventListener('click', () => {
+      addMode = !addMode;
+      addModeBtn.classList.toggle('active');
+      svg.querySelectorAll('circle').forEach(c => {
+        if (addMode) c.classList.add('moveable');
+        else c.classList.remove('moveable');
+      });
+    });
 
     radiusInput.addEventListener('input', () => {
       updateAllRadii();
@@ -667,213 +704,89 @@
 
     bgUpload.addEventListener('change', e => {
       const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        bgImg.src = ev.target.result;
-        bgImg.style.display = 'block';
-        saveSharedState();
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          bgImg.src = event.target.result;
+          bgImg.style.display = 'block';
+          saveSharedState();
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function showTooltip(e) {
+      if (mode !== 'view') return;
+      const c = e.currentTarget;
+      if (!c.classList.contains('filled')) return;
+      
+      tooltip.textContent = `Installed: ${c.getAttribute('data-date') || 'N/A'}`;
+      tooltip.style.opacity = '1';
+      
+      const updatePos = (ev) => {
+        tooltip.style.left = ev.clientX + 15 + 'px';
+        tooltip.style.top = ev.clientY + 15 + 'px';
       };
-      reader.readAsDataURL(file);
-    });
-
-    addModeBtn.addEventListener('click', () => {
-      addMode = !addMode;
-      addModeBtn.classList.toggle('active', addMode);
-      addModeBtn.innerHTML = addMode
-        ? '<i class="fas fa-plus"></i> Add Mode + <b>ON</b>'
-        : '<i class="fas fa-plus"></i> Add Mode +';
-      updateCirclesInteraction();
-    });
-
-    passwordClose.addEventListener('click', () => {
-      passwordOverlay.style.display = 'none';
-      document.getElementById('password-input').value = '';
-      document.getElementById('password-error').textContent = '';
-    });
-
-    passwordOverlay.addEventListener('click', e => {
-      if (e.target === passwordOverlay) {
-        passwordOverlay.style.display = 'none';
-        document.getElementById('password-input').value = '';
-        document.getElementById('password-error').textContent = '';
-      }
-    });
-
-    modeBtn.addEventListener('click', () => {
-      if (mode === 'view') {
-        passwordOverlay.style.display = 'flex';
-        document.getElementById('password-input').focus();
-      } else {
-        mode = 'view';
-        addMode = false;
-        updateModeUI();
-        updateCirclesInteraction();
-      }
-    });
-
-    document.getElementById('password-submit').addEventListener('click', () => {
-      const input = document.getElementById('password-input').value.trim();
-      if (input === '12345') {
-        mode = 'edit';
-        passwordOverlay.style.display = 'none';
-        document.getElementById('password-input').value = '';
-        document.getElementById('password-error').textContent = '';
-        updateModeUI();
-        updateCirclesInteraction();
-      } else {
-        document.getElementById('password-error').textContent = 'Wrong password';
-      }
-    });
-
-    document.getElementById('password-input').addEventListener('keypress', e => {
-      if (e.key === 'Enter') document.getElementById('password-submit').click();
-    });
-
-    function updateModeUI() {
-      toolbar.style.display = 'flex';
-
-      if (mode === 'edit') {
-        modeBtn.innerHTML = '<i class="fas fa-eye"></i>';
-        modeBtn.title = 'Switch to view mode';
-        document.getElementById('info').textContent =
-          "Edit mode: Left click on pile → install / uninstall · Right click → delete · Wheel zoom · Middle click pan";
-        document.getElementById('radius-label').style.display = 'inline';
-        radiusInput.style.display = 'inline';
-        document.getElementById('total-label').style.display = 'inline';
-        totalInput.style.display = 'inline';
-        addModeBtn.style.display = 'inline-flex';
-        bgUpload.previousElementSibling.style.display = 'inline-flex';
-        statsBtn.style.display = 'none';
-      } else {
-        mode = 'view';
-        modeBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
-        modeBtn.title = 'Switch to edit mode';
-        tooltip.style.opacity = '0';
-        document.getElementById('info').textContent =
-          "View mode only · Wheel zoom · Left click drag to pan when zoomed · Hover on installed pile to see date";
-        document.getElementById('radius-label').style.display = 'none';
-        radiusInput.style.display = 'none';
-        document.getElementById('total-label').style.display = 'none';
-        totalInput.style.display = 'none';
-        addModeBtn.style.display = 'none';
-        bgUpload.previousElementSibling.style.display = 'none';
-        statsBtn.style.display = 'inline-flex';
-      }
+      c.addEventListener('mousemove', updatePos);
+      c._updatePos = updatePos;
     }
 
-    statsClose.addEventListener('click', () => statsOverlay.style.display = 'none');
-    statsOverlay.addEventListener('click', e => {
-      if (e.target === statsOverlay) statsOverlay.style.display = 'none';
-    });
+    function hideTooltip(e) {
+      tooltip.style.opacity = '0';
+      e.currentTarget.removeEventListener('mousemove', e.currentTarget._updatePos);
+    }
 
+    // Stats
     statsBtn.addEventListener('click', () => {
-      const dateMap = new Map();
-
-      svg.querySelectorAll('circle.filled').forEach(circle => {
-        const date = circle.getAttribute('data-date') || 'No date';
-        dateMap.set(date, (dateMap.get(date) || 0) + 1);
+      const countsByDate = {};
+      svg.querySelectorAll('circle.filled').forEach(c => {
+        const d = c.getAttribute('data-date') || 'Unknown';
+        countsByDate[d] = (countsByDate[d] || 0) + 1;
       });
 
-      const sortedDates = Array.from(dateMap.keys()).sort((a, b) => {
-        if (a === 'No date' || b === 'No date') return 0;
-        const [da, ma, ya] = a.split('.').map(Number);
-        const [db, mb, yb] = b.split('.').map(Number);
-        return new Date(ya, ma - 1, da) - new Date(yb, mb - 1, db);
+      const sortedDates = Object.keys(countsByDate).sort((a,b) => {
+        const da = a.split('.').reverse().join('');
+        const db = b.split('.').reverse().join('');
+        return db.localeCompare(da);
       });
 
       statsBody.innerHTML = '';
-
-      let total = 0;
-      sortedDates.forEach(date => {
-        const count = dateMap.get(date);
-        total += count;
-        const row = document.createElement('tr');
-        row.innerHTML = `<td>${date}</td><td style="text-align:center;">${count}</td>`;
-        statsBody.appendChild(row);
+      sortedDates.forEach(d => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${d}</td><td>${countsByDate[d]}</td>`;
+        statsBody.appendChild(tr);
       });
 
-      statsTotal.innerHTML = `Total Installed Piles: <strong>${total}</strong>`;
-
+      statsTotal.querySelector('strong').textContent = filledCount;
       statsOverlay.style.display = 'flex';
     });
 
-    stateRef.once('value').then((snapshot) => {
-      const data = snapshot.val();
+    statsClose.onclick = () => { statsOverlay.style.display = 'none'; };
+
+    // Firebase Sync
+    stateRef.on('value', snap => {
+      const data = snap.val();
       if (!data) return;
 
       svg.innerHTML = '';
       filledCount = 0;
 
-      (data.circles || []).forEach(item => {
+      (data.circles || []).forEach(cData => {
         const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        circle.setAttribute('cx', item.cx);
-        circle.setAttribute('cy', item.cy);
-        circle.setAttribute('r', item.r);
-        circle.setAttribute('data-date', item.date || new Date().toLocaleDateString('ru-RU'));
-
-        if (item.filled) {
+        circle.setAttribute('cx', cData.cx);
+        circle.setAttribute('cy', cData.cy);
+        circle.setAttribute('r', cData.r || CIRCLE_RADIUS_DEFAULT);
+        if (cData.filled) {
           circle.classList.add('filled');
           filledCount++;
         }
+        if (cData.date) circle.setAttribute('data-date', cData.date);
 
-        circle.addEventListener('click', handleCircleClick);
-        circle.addEventListener('contextmenu', handleCircleContextMenu);
-        circle.addEventListener('mousedown', startCircleDrag);
-        circle.addEventListener('touchstart', startCircleDrag, { passive: false });
-
-        circle.addEventListener('mouseenter', showTooltip);
-        circle.addEventListener('mouseleave', hideTooltip);
-
+        addCircleListeners(circle);
         svg.appendChild(circle);
       });
 
-      if (data.background && data.background.startsWith('data:image')) {
-        bgImg.src = data.background;
-        bgImg.style.display = 'block';
-      } else {
-        bgImg.style.display = 'none';
-      }
-
-      radiusInput.value = data.radius || '20';
-      totalInput.value = data.total || '400';
-
-      updateAllRadii();
-      updateCounter();
-      updateViewBox();
-    }).catch(err => console.error('Error loading:', err));
-
-    stateRef.on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
-
-      svg.innerHTML = '';
-      filledCount = 0;
-
-      (data.circles || []).forEach(item => {
-        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        circle.setAttribute('cx', item.cx);
-        circle.setAttribute('cy', item.cy);
-        circle.setAttribute('r', item.r);
-        circle.setAttribute('data-date', item.date);
-
-        if (item.filled) {
-          circle.classList.add('filled');
-          filledCount++;
-        }
-
-        circle.addEventListener('click', handleCircleClick);
-        circle.addEventListener('contextmenu', handleCircleContextMenu);
-        circle.addEventListener('mousedown', startCircleDrag);
-        circle.addEventListener('touchstart', startCircleDrag, { passive: false });
-
-        circle.addEventListener('mouseenter', showTooltip);
-        circle.addEventListener('mouseleave', hideTooltip);
-
-        svg.appendChild(circle);
-      });
-
-      if (data.background && data.background.startsWith('data:image')) {
+      if (data.background) {
         bgImg.src = data.background;
         bgImg.style.display = 'block';
       } else {
@@ -903,7 +816,7 @@
         radius: radiusInput.value,
         total: totalInput.value,
         updated: new Date().toISOString()
-      }).catch(err => console.error('Error saving:', err));
+      });
     }
 
     updateModeUI();
